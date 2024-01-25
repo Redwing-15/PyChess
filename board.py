@@ -33,3 +33,18 @@ class Board:
             self.positions[5][pieceRank] = Piece("bishop", n)
             self.positions[6][pieceRank] = Piece("knight", n)
             self.positions[7][pieceRank] = Piece("rook", n)
+
+    def get_pieces(self, team):
+        pieces = [0] * 16
+        for entry in range(16):
+            for rank in range(8):
+                for file in range(8):
+                    piece = self.positions[rank][file]
+                    if isinstance(piece, int):
+                        continue
+                    if piece.team != team:
+                        continue
+                    if piece in pieces:
+                        continue
+                    pieces[entry] = piece
+        return pieces
