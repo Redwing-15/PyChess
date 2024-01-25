@@ -21,7 +21,7 @@ class Game:
 
     def mainloop(self):
         self.running = True
-        self.movingPiece = False
+        self.attemptingMove = False
 
         self.move = 0
         while self.running:
@@ -34,36 +34,37 @@ class Game:
 
             self.draw_display()
             self.clock.tick(self.FPS)
-
+            # break
         pygame.quit()
 
     def draw_display(self):
         # Draw grid
+        tile = 0
         for rank in range(8):
             for file in range(8):
-                tileColour = (207, 181, 135)
+                tileColour = (130, 89, 53)
                 if (rank + file) % 2:
-                    tileColour = (130, 89, 53)
-                pygame.draw.rect(
-                    self.screen,
-                    tileColour,
-                    self.board.tiles[file][rank],
-                )
+                    tileColour = (207, 181, 135)
+                pygame.draw.rect(self.screen, tileColour, self.board.newTiles[tile])
+                tile += 1
 
         # Draw pieces
         isMoving = False
+        entry = -1
         for rank in range(8):
             for file in range(8):
-                piece = self.board.positions[file][rank]
+                entry += 1
+                piece = self.board.positions[entry]
                 if isinstance(piece, int):
                     continue
-                pos = (file * 75, rank * 75)
-                if piece.isMoving != False:
+                pos = (file * 75, (7 - rank) * 75)
+                if not isinstance(piece.isMoving, bool):
                     mouse_X, mouse_Y = pygame.mouse.get_pos()
                     pos = (mouse_X - 37.5, mouse_Y - 37.5)
                     isMoving = [piece.image, pos]
                     continue
                 self.screen.blit(piece.image, pos)
+
         if isMoving != False:
             self.screen.blit(isMoving[0], isMoving[1])
 
@@ -72,29 +73,26 @@ class Game:
     def handle_mouseclick(self, event):
         if event.button != 1:
             return
-        for file in range(8):
-            for rank in range(8):
-                tile = self.board.tiles[file][rank]
-                if not tile.collidepoint(event.pos):
-                    continue
-                if self.movingPiece:
-                    for piece in self.pieces[self.curPlayer]:
-                        if piece.isMoving != False:
-                            break
-                    oldFile, oldRank = piece.isMoving[0], piece.isMoving[1]
-                    self.board.positions[oldFile][oldRank] = 0
-                    self.board.positions[file][rank] = piece
-                    piece.isMoving = False
-                    self.movingPiece = False
-                    self.move += 1
-                    return
-                piece = self.board.positions[file][rank]
-                if isinstance(piece, int):
-                    continue
-                if piece.team != self.curPlayer:
-                    continue
-                piece.isMoving = [file, rank]
-                self.movingPiece = True
+
+        for var in range(64):
+            tile = self.board.newTiles[var]
+            if not tile.collidepoint(event.pos):
+                continue
+            if self.attemptingMove:
+                for piece in self.pieces[self.curPlayer]:
+                    if not isinstance(piece.isMoving, bool):
+                        break
+                self.board.move_piece(piece, var)
+                self.attemptingMove = False
+                self.move += 1
+                return
+            piece = self.board.positions[var]
+            if isinstance(piece, int):
+                continue
+            if piece.team != self.curPlayer:
+                continue
+            piece.isMoving = var
+            self.attemptingMove = True
 
 
 def main():

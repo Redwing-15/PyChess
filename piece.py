@@ -14,3 +14,9 @@ class Piece:
         self.image = transform.scale(self.image, (75, 75))
 
         self.isMoving = False
+
+    def get_moveset(self):
+        moveset = []
+        if self.type == "pawn":
+            moveset.append(1)
+        return moveset
