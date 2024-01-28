@@ -39,22 +39,23 @@ class Game:
 
     def draw_display(self):
         # Draw grid
-        tile = 0
         for rank in range(8):
             for file in range(8):
                 tileColour = (130, 89, 53)
                 if (rank + file) % 2:
                     tileColour = (207, 181, 135)
-                pygame.draw.rect(self.screen, tileColour, self.board.newTiles[tile])
-                tile += 1
+                tileIndex = (rank * 8) + file
+                pygame.draw.rect(
+                    self.screen, tileColour, self.board.newTiles[tileIndex]
+                )
 
         # Draw pieces
         isMoving = False
-        entry = -1
         for rank in range(8):
             for file in range(8):
-                entry += 1
-                piece = self.board.positions[entry]
+                index = (rank * 8) + file
+
+                piece = self.board.positions[index]
                 if isinstance(piece, int):
                     continue
                 pos = (file * 75, (7 - rank) * 75)
@@ -82,9 +83,9 @@ class Game:
                 for piece in self.pieces[self.curPlayer]:
                     if not isinstance(piece.isMoving, bool):
                         break
-                self.board.move_piece(piece, var)
+                if self.board.handle_move(piece, var):
+                    self.move += 1
                 self.attemptingMove = False
-                self.move += 1
                 return
             piece = self.board.positions[var]
             if isinstance(piece, int):
