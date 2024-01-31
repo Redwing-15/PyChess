@@ -1,6 +1,6 @@
 import pygame
+import boardhelper
 from board import Board
-from board import Piece
 
 
 class Game:
@@ -53,7 +53,7 @@ class Game:
         isMoving = False
         for rank in range(8):
             for file in range(8):
-                index = (rank * 8) + file
+                index = boardhelper.get_index(rank, file)
 
                 piece = self.board.positions[index]
                 if isinstance(piece, int):
@@ -92,8 +92,11 @@ class Game:
                 continue
             if piece.team != self.curPlayer:
                 continue
+            piece.moves = self.board.get_moves(piece, var)
             piece.isMoving = var
             self.attemptingMove = True
+            # print(piece.moves)
+            return
 
 
 def main():

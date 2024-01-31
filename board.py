@@ -1,6 +1,6 @@
 import pygame
+import boardhelper
 from piece import Piece
-from math import ceil
 
 
 class Board:
@@ -39,80 +39,100 @@ class Board:
         #     temp.append(f"{item.type}, {item.team}")
         # print(temp)
 
-    def handle_move(self, piece, new_pos):
-        old_pos = piece.isMoving
-        piece.isMoving = False
-        moveOffset = new_pos - old_pos
-        moveset = piece.get_moveset()
-        if not moveOffset in moveset:
-            return False
-        if len(moveset) > 8:
-            if piece.type == "rook" or piece.type == "bishop":
-                if not self.handle_sliding_moves(
-                    piece.type, piece.team, old_pos, new_pos
-                ):
-                    return False
-            elif piece.type == "queen":
-                movesets = ["rook", "bishop"]
-                for move in range(2):
-                    print(move)
-                    if not self.handle_sliding_moves(
-                        movesets[move], piece.team, old_pos, new_pos
-                    ):
-                        return False
-        # elif isinstance(self.positions[new_pos], Piece):
-        #     if self.positions[new_pos].team == piece.team:
-        #         return False
-        self.positions[old_pos] = 0
-        self.positions[new_pos] = piece
-        return True
-
-    def handle_sliding_moves(self, piece, team, old_pos, new_pos):
+    # Get every possible move for the piece, excluding special cases like castling or en passant
+    def get_moves(self, piece, position):
         moveset = []
+        if piece.type == "rook" or piece.type == "queen":
+            moveset.extend(self.handle_sliding_moves("rook", piece.team, position))
+        # Not using elif so queen can use moves of both rook and bishop
+        if piece.type == "bishop" or piece.type == "queen":
+            moveset.extend(self.handle_sliding_moves("bishop", piece.team, position))
+        elif piece.type == "pawn":
+            for move in range(7, 10):
+                offset = move
+                if piece.team == 1:
+                    offset = offset * -1
+                if isinstance(self.positions[position + offset], Piece):
+                    if move == 8:
+                        continue
+                    elif self.positions[position + offset].team != piece.team:
+                        moveset.append(move)
+                if move == 8:
+                    moveset.append(move)
+            if piece.team == 1:
+                moveset = [n * -1 for n in moveset]
+        elif piece.type == "knight":
+            for move in [-10, -17, -6, -15, 6, 15, 10, 17]:
+                current_file = boardhelper.get_index_file(position)
+                target_file = boardhelper.get_index_file(position + move)
+                difference = target_file - current_file
+                if difference in [1, 2, -1, -2]:
+                    moveset.append(move)
+        elif piece.type == "king":
+            moveset.extend([1, -1, 8, -8, 7, 9, -7, -9])
+
+        moves = []
+        for move in moveset:
+            target = position + move
+            if target < 0 or target > 63:
+                continue
+            target = self.positions[target]
+            if isinstance(target, Piece):
+                if target.team == piece.team:
+                    continue
+            moves.append(move)
+        return moves
+
+    def handle_sliding_moves(self, piece, team, position):
+        moves = []
         if piece == "rook":
             moveOffset = [1, -1, 8, -8]
         elif piece == "bishop":
             moveOffset = [7, 9, -7, -9]
-        elif piece == "queen":
-            print("cba to continue with this method")
+
         blockedDirs = []
         for count in range(1, 8):
             for dir in range(4):
                 if dir in blockedDirs:
                     continue
                 move = moveOffset[dir] * count
-                target = old_pos + move
+                target = position + move
                 if target < 0 or target > 63:
                     blockedDirs.append(dir)
                     continue
 
                 # Handle cases where piece jumps across screen
-                currentRank = ceil((old_pos + 1) / 8)
-                targetRank = ceil((target + 1) / 8)
+                currentRank = boardhelper.get_index_rank(position)
+                targetRank = boardhelper.get_index_rank(target)
                 if piece == "rook" and dir < 2 and currentRank != targetRank:
                     blockedDirs.append(dir)
                     continue
-
                 if piece == "bishop" and dir < 2 and currentRank + count != targetRank:
-                    print(count, currentRank + count, targetRank)
                     blockedDirs.append(dir)
                     continue
                 elif (
                     piece == "bishop" and dir > 1 and currentRank - count != targetRank
                 ):
-                    print(count, currentRank + count, targetRank)
                     blockedDirs.append(dir)
                     continue
-                # print(move)
+
                 if isinstance(self.positions[target], Piece):
                     if self.positions[target].team != team:
-                        moveset.append(move)
+                        moves.append(move)
                     blockedDirs.append(dir)
                     continue
-                moveset.append(move)
-        print(moveset)
-        if not (new_pos - old_pos) in moveset:
+                moves.append(move)
+        return moves
+
+    def handle_move(self, piece, new_pos):
+        old_pos = piece.isMoving
+        piece.isMoving = False
+        moveOffset = new_pos - old_pos
+        if not moveOffset in piece.moves:
             return False
+
+        self.positions[old_pos] = 0
+        self.positions[new_pos] = piece
         return True
 
     def get_pieces(self, team):
