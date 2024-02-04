@@ -14,5 +14,9 @@ class Piece:
         self.image = transform.scale(self.image, (75, 75))
 
         self.moves = []
+        self.moveCount = 0
+
+        if type == "pawn":
+            self.doublePush = False
 
         self.isMoving = False

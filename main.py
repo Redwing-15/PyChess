@@ -16,7 +16,6 @@ class Game:
 
         self.board = Board()
 
-        self.pieces = [self.board.get_pieces(0), self.board.get_pieces(1)]
         self.mainloop()
 
     def mainloop(self):
@@ -31,7 +30,6 @@ class Game:
                     self.running = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.handle_mouseclick(event)
-
             self.draw_display()
             self.clock.tick(self.FPS)
             # break
@@ -80,11 +78,12 @@ class Game:
             if not tile.collidepoint(event.pos):
                 continue
             if self.attemptingMove:
-                for piece in self.pieces[self.curPlayer]:
+                for piece in self.board.pieces[self.curPlayer]:
                     if not isinstance(piece.isMoving, bool):
                         break
                 if self.board.handle_move(piece, var):
                     self.move += 1
+                    self.board.update_pawns(self.curPlayer ^ 1)
                 self.attemptingMove = False
                 return
             piece = self.board.positions[var]
@@ -95,7 +94,7 @@ class Game:
             piece.moves = self.board.get_moves(piece, var)
             piece.isMoving = var
             self.attemptingMove = True
-            # print(piece.moves)
+            print(piece.moves)
             return
 
 
