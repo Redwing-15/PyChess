@@ -34,12 +34,6 @@ class Board:
             offset = team * 48
             for piece in range(16):
                 self.pieces[team].append(self.positions[piece + offset])
-
-        for n in range(2):
-            pieces = []
-            for piece in self.pieces[n]:
-                pieces.append(piece.type)
-            print(pieces)
         # Code for displaying board
         # temp = []
         # for item in self.positions:
@@ -97,6 +91,8 @@ class Board:
             moveset.extend(self.get_sliding_moves("bishop", piece.team, position))
         elif piece.type == "pawn":
             for move in range(7, 10):
+                if not self.handle_screen_jumping(piece.type, position, move):
+                    continue
                 offset = move
                 if piece.team == 1:
                     offset = offset * -1
@@ -117,14 +113,12 @@ class Board:
 
         elif piece.type == "knight":
             for move in [-10, -17, -6, -15, 6, 15, 10, 17]:
-                # Handle cases where piece jumps across screen
-                current_file = boardhelper.get_index_file(position)
-                target_file = boardhelper.get_index_file(position + move)
-                difference = target_file - current_file
-                if difference in [1, 2, -1, -2]:
+                if self.handle_screen_jumping(piece.type, position, move):
                     moveset.append(move)
         elif piece.type == "king":
-            moveset.extend([1, -1, 8, -8, 7, 9, -7, -9])
+            for move in [1, -1, 8, -8, 7, 9, -7, -9]:
+                if self.handle_screen_jumping(piece.type, position, move):
+                    moveset.append(move)
             canCastle = self.can_castle(piece.team)
             if canCastle != False:
                 moveset.extend(canCastle)
@@ -185,6 +179,8 @@ class Board:
     def can_en_passant(self, position, team):
         moves = []
         for move in range(7, 10, 2):
+            if not self.handle_screen_jumping("pawn", position, move):
+                continue
             target_position = position + move if team == 0 else position - move
             if isinstance(self.positions[target_position], Piece):
                 continue
@@ -234,6 +230,22 @@ class Board:
                     moves.append(2)
 
         return moves
+
+    # Will return negative if piece jumps across screen
+    def handle_screen_jumping(self, piece, position, move):
+        if piece == "pawn" or piece == "king":
+            current_rank = boardhelper.get_index_rank(position)
+            target_rank = boardhelper.get_index_rank(position + move)
+            difference = target_rank - current_rank
+            if difference > 1:
+                return False
+        elif piece == "knight":
+            current_file = boardhelper.get_index_file(position)
+            target_file = boardhelper.get_index_file(position + move)
+            difference = target_file - current_file
+            if not difference in [1, 2, -1, -2]:
+                return False
+        return True
 
     # Updates pawns to prevent en passant
     def update_pawns(self, team):
