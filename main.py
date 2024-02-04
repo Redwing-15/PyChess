@@ -94,7 +94,7 @@ class Game:
             piece.moves = self.board.get_moves(piece, var)
             piece.isMoving = var
             self.attemptingMove = True
-            print(piece.moves)
+            # print(piece.moves)
             return
 
 
