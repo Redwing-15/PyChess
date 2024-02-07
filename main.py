@@ -23,7 +23,7 @@ class Game:
         self.attemptingMove = False
 
         self.move = 0
-        while self.running:
+        while self.running == True:
             self.curPlayer = self.move % 2
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -32,7 +32,6 @@ class Game:
                     self.handle_mouseclick(event)
             self.draw_display()
             self.clock.tick(self.FPS)
-            # break
         pygame.quit()
 
     def draw_display(self):
@@ -57,7 +56,7 @@ class Game:
                 if isinstance(piece, int):
                     continue
                 pos = (file * 75, (7 - rank) * 75)
-                if not isinstance(piece.isMoving, bool):
+                if piece.isMoving:
                     mouse_X, mouse_Y = pygame.mouse.get_pos()
                     pos = (mouse_X - 37.5, mouse_Y - 37.5)
                     isMoving = [piece.image, pos]
@@ -79,10 +78,12 @@ class Game:
                 continue
             if self.attemptingMove:
                 for piece in self.board.pieces[self.curPlayer]:
-                    if not isinstance(piece.isMoving, bool):
+                    if piece.isMoving:
                         break
                 if self.board.handle_move(piece, var):
                     self.move += 1
+                    if self.is_checkmate(self.curPlayer ^ 1):
+                        self.running = "Checkmate"
                     self.board.update_pawns(self.curPlayer ^ 1)
                 self.attemptingMove = False
                 return
@@ -91,15 +92,24 @@ class Game:
                 continue
             if piece.team != self.curPlayer:
                 continue
+            # Get all possible moves, then remove any if they lead to king capture next move
             piece.moves = self.board.get_moves(piece, var)
-            piece.isMoving = var
+            piece.isMoving = True
             self.attemptingMove = True
-            # print(piece.moves)
             return
+
+    def is_checkmate(self, team):
+        moves = []
+        for piece in self.board.pieces[team]:
+            moves.extend(self.board.get_moves(piece, piece.pos))
+        if len(moves) == 0:
+            return True
+        return False
 
 
 def main():
     game = Game()
+    print(game.running)
     print("Game Over!")
 
 

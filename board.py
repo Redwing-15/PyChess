@@ -16,24 +16,27 @@ class Board:
         # Create pieces
         self.pieces = [[], []]
         for pos in range(8):
-            self.positions[pos + 8] = Piece("pawn", 0)
-            self.positions[pos + 48] = Piece("pawn", 1)
+            self.pieces[0].append(Piece("pawn", 0, pos + 8))
+            self.pieces[1].append(Piece("pawn", 1, pos + 48))
 
         for team in range(2):
             offset = team * 56
 
-            self.positions[0 + offset] = Piece("rook", team)
-            self.positions[1 + offset] = Piece("knight", team)
-            self.positions[2 + offset] = Piece("bishop", team)
-            self.positions[3 + offset] = Piece("queen", team)
-            self.positions[4 + offset] = Piece("king", team)
-            self.positions[5 + offset] = Piece("bishop", team)
-            self.positions[6 + offset] = Piece("knight", team)
-            self.positions[7 + offset] = Piece("rook", team)
+            pieces = [
+                "rook",
+                "knight",
+                "bishop",
+                "queen",
+                "king",
+                "bishop",
+                "knight",
+                "rook",
+            ]
+            for i, piece in enumerate(pieces):
+                self.pieces[team].append(Piece(piece, team, i + offset))
 
-            offset = team * 48
-            for piece in range(16):
-                self.pieces[team].append(self.positions[piece + offset])
+            for piece in self.pieces[team]:
+                self.positions[piece.pos] = piece
         # Code for displaying board
         # temp = []
         # for item in self.positions:
@@ -44,8 +47,8 @@ class Board:
         # print(temp)
 
     def handle_move(self, piece, new_pos):
-        old_pos = piece.isMoving
         piece.isMoving = False
+        old_pos = piece.pos
         moveOffset = new_pos - old_pos
         if not moveOffset in piece.moves:
             return False
@@ -62,6 +65,7 @@ class Board:
 
         self.positions[old_pos] = 0
         self.positions[new_pos] = piece
+        piece.pos = new_pos
 
         # Handle Castling
         if piece.type == "king":
@@ -83,6 +87,14 @@ class Board:
         return True
 
     def get_moves(self, piece, position):
+        legalMoves = []
+        moves = self.get_pseudo_moves(piece, position)
+        for move in moves:
+            if self.handle_check(piece, piece.pos + move):
+                legalMoves.append(move)
+        return legalMoves
+
+    def get_pseudo_moves(self, piece, position):
         moveset = []
         if piece.type == "rook" or piece.type == "queen":
             moveset.extend(self.get_sliding_moves("rook", piece.team, position))
@@ -198,6 +210,7 @@ class Board:
             moves = [-item for item in moves]
         return moves
 
+    # Need to add check to prevent from castling into check
     def can_castle(self, team):
         kingSquare = 4 + (team * 56)
         if isinstance(self.positions[kingSquare], int):
@@ -246,6 +259,32 @@ class Board:
             if not difference in [1, 2, -1, -2]:
                 return False
         return True
+
+    def handle_check(self, piece, position):
+        inCheck = False
+
+        currentPositions = self.positions.copy()
+        currentPieces = self.pieces[piece.team ^ 1].copy()
+        oldPiecePosition = piece.pos
+
+        self.handle_move(piece, position)
+        for position in range(64):
+            enemyPiece = self.positions[position]
+            if isinstance(enemyPiece, int):
+                continue
+            if enemyPiece.team == piece.team:
+                continue
+            moves = self.get_pseudo_moves(enemyPiece, position)
+            for move in moves:
+                targetPosition = self.positions[position + move]
+                if isinstance(targetPosition, int):
+                    continue
+                if targetPosition.type == "king":
+                    inCheck = True
+        self.positions = currentPositions
+        self.pieces[piece.team ^ 1] = currentPieces
+        piece.pos = oldPiecePosition
+        return inCheck ^ 1
 
     # Updates pawns to prevent en passant
     def update_pawns(self, team):
