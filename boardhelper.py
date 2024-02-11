@@ -1,3 +1,4 @@
+tileIndex = "white"
 def get_index_rank(index):
     return (index // 8) + 1
 

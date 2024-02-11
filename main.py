@@ -7,11 +7,12 @@ class Game:
     def __init__(self):
         pygame.init()
         self.WIDTH, self.HEIGHT = 600, 600
+        self.colourWHite = "0,0,0"
 
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("PyChess")
 
-        self.FPS = 60
+        self.FPS = 240
         self.clock = pygame.time.Clock()
 
         self.board = Board()
@@ -83,7 +84,8 @@ class Game:
                 if self.board.handle_move(piece, var):
                     self.move += 1
                     if self.is_checkmate(self.curPlayer ^ 1):
-                        self.running = "Checkmate"
+                        print("Checkmate")
+                    # self.running = "Checkmate"
                     self.board.update_pawns(self.curPlayer ^ 1)
                 self.attemptingMove = False
                 return
@@ -92,8 +94,8 @@ class Game:
                 continue
             if piece.team != self.curPlayer:
                 continue
-            # Get all possible moves, then remove any if they lead to king capture next move
             piece.moves = self.board.get_moves(piece, var)
+            print(piece.moves)
             piece.isMoving = True
             self.attemptingMove = True
             return

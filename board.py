@@ -1,6 +1,7 @@
 import pygame
 import boardhelper
 from piece import Piece
+import copy
 
 
 class Board:
@@ -37,14 +38,7 @@ class Board:
 
             for piece in self.pieces[team]:
                 self.positions[piece.pos] = piece
-        # Code for displaying board
-        # temp = []
-        # for item in self.positions:
-        #     if isinstance(item, int):
-        #         temp.append(0)
-        #         continue
-        #     temp.append(f"{item.type}, {item.team}")
-        # print(temp)
+        print(self.get_board())
 
     def handle_move(self, piece, new_pos):
         piece.isMoving = False
@@ -92,6 +86,7 @@ class Board:
         for move in moves:
             if self.handle_check(piece, piece.pos + move):
                 legalMoves.append(move)
+
         return legalMoves
 
     def get_pseudo_moves(self, piece, position):
@@ -115,7 +110,6 @@ class Board:
                         moveset.append(move)
                 if move == 8:
                     moveset.append(move)
-
             if piece.moveCount == 0:
                 moveset.append(16)
             if piece.team == 1:
@@ -210,7 +204,7 @@ class Board:
             moves = [-item for item in moves]
         return moves
 
-    # Need to add check to prevent from castling into check
+    # Need to prevent castling into check
     def can_castle(self, team):
         kingSquare = 4 + (team * 56)
         if isinstance(self.positions[kingSquare], int):
@@ -266,24 +260,40 @@ class Board:
         currentPositions = self.positions.copy()
         currentPieces = self.pieces[piece.team ^ 1].copy()
         oldPiecePosition = piece.pos
+        oldMoves = piece.moves.copy()
+        oldMoveCount = piece.moveCount
+        if piece.type == "pawn":
+            oldDoublePush = piece.doublePush
 
+        piece.moves = self.get_pseudo_moves(piece, position)
         self.handle_move(piece, position)
-        for position in range(64):
-            enemyPiece = self.positions[position]
+
+        for boardPosition in range(64):
+            if inCheck:
+                break
+            enemyPiece = self.positions[boardPosition]
             if isinstance(enemyPiece, int):
                 continue
             if enemyPiece.team == piece.team:
                 continue
-            moves = self.get_pseudo_moves(enemyPiece, position)
+            moves = self.get_pseudo_moves(enemyPiece, boardPosition)
             for move in moves:
-                targetPosition = self.positions[position + move]
+                targetPosition = self.positions[boardPosition + move]
                 if isinstance(targetPosition, int):
                     continue
                 if targetPosition.type == "king":
                     inCheck = True
+                    break
         self.positions = currentPositions
         self.pieces[piece.team ^ 1] = currentPieces
         piece.pos = oldPiecePosition
+        piece.moves = oldMoves
+        piece.moveCount = oldMoveCount
+        if piece.type == "pawn":
+            piece.doublePush = oldDoublePush
+
+        if piece.type == "king":
+            diff = position - piece.pos
         return inCheck ^ 1
 
     # Updates pawns to prevent en passant
@@ -295,3 +305,20 @@ class Board:
                 continue
             if piece.doublePush == True:
                 piece.doublePush = False
+
+        self.get_board()
+
+    def get_board(self):
+        board = ""
+        # Code for displaying board
+        for rank in range(8):
+            temp = []
+            for file in range(8):
+                tileIndex = (rank * 8) + file
+                tile = self.positions[tileIndex]
+                if isinstance(tile, int):
+                    temp.append(0)
+                    continue
+                temp.append(f"{tile.type[0]}, {tile.team}")
+            board += f"{temp}\n"
+        return board
