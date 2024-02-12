@@ -16,9 +16,10 @@ class Board:
 
         # Create pieces
         self.pieces = [[], []]
-        for pos in range(8):
-            self.pieces[0].append(Piece("pawn", 0, pos + 8))
-            self.pieces[1].append(Piece("pawn", 1, pos + 48))
+        # For testing castling
+        # for pos in range(8):
+        #     self.pieces[0].append(Piece("pawn", 0, pos + 8))
+        #     self.pieces[1].append(Piece("pawn", 1, pos + 48))
 
         for team in range(2):
             offset = team * 56
@@ -34,11 +35,13 @@ class Board:
                 "rook",
             ]
             for i, piece in enumerate(pieces):
+                # For testing castling
+                if piece in ["knight", "bishop", "queen"]:
+                    continue
                 self.pieces[team].append(Piece(piece, team, i + offset))
 
             for piece in self.pieces[team]:
                 self.positions[piece.pos] = piece
-        print(self.get_board())
 
     def handle_move(self, piece, new_pos):
         piece.isMoving = False
@@ -204,8 +207,10 @@ class Board:
             moves = [-item for item in moves]
         return moves
 
-    # Need to prevent castling into check
+    # Need to rework the check system to add
+    # Need to prevent castling past check or under check
     def can_castle(self, team):
+        # Can king castle
         kingSquare = 4 + (team * 56)
         if isinstance(self.positions[kingSquare], int):
             return False
@@ -214,6 +219,7 @@ class Board:
 
         moves = []
         for side in range(2):
+            # Can rook castle
             rookSquare = (7 * side) + (team * 56)
             if isinstance(self.positions[rookSquare], int):
                 continue
@@ -222,19 +228,49 @@ class Board:
                 continue
             if piece.moveCount != 0:
                 continue
+
+            # Are the tiles between clear?
             clear = 0
             for move in range(1, 4 - side):
-                position = rookSquare + move
+                position = kingSquare - move
                 if side == 1:
-                    position = rookSquare - move
+                    position = kingSquare + move
+                # print(kingSquare, move, position)
                 if isinstance(self.positions[position], Piece):
                     break
+                # elif move < 3 and not self.handle_check(
+                #     self.positions[kingSquare], kingSquare + move
+                # ):
+                #     break
                 clear += 1
+
             if clear == 3 - side:
                 if side == 0:
                     moves.append(-2)
                 else:
                     moves.append(2)
+        # for side in range(2):
+        #     rookSquare = (7 * side) + (team * 56)
+        #     if isinstance(self.positions[rookSquare], int):
+        #         continue
+        #     piece = self.positions[rookSquare]
+        #     if piece.type != "rook":
+        #         continue
+        #     if piece.moveCount != 0:
+        #         continue
+        #     clear = 0
+        #     for move in range(1, 4 - side):
+        #         position = rookSquare + move
+        #         if side == 1:
+        #             position = rookSquare - move
+        #         if isinstance(self.positions[position], Piece):
+        #             break
+        #         clear += 1
+        #     if clear == 3 - side:
+        #         if side == 0:
+        #             moves.append(-2)
+        #         else:
+        #             moves.append(2)
 
         return moves
 
@@ -310,7 +346,6 @@ class Board:
 
     def get_board(self):
         board = ""
-        # Code for displaying board
         for rank in range(8):
             temp = []
             for file in range(8):

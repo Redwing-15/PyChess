@@ -33,7 +33,12 @@ class Game:
                     self.handle_mouseclick(event)
             self.draw_display()
             self.clock.tick(self.FPS)
-        pygame.quit()
+        # Game over
+
+        print(self.running)
+        while True:
+            self.draw_display()
+        # pygame.quit()
 
     def draw_display(self):
         # Draw grid
@@ -84,8 +89,7 @@ class Game:
                 if self.board.handle_move(piece, var):
                     self.move += 1
                     if self.is_checkmate(self.curPlayer ^ 1):
-                        print("Checkmate")
-                    # self.running = "Checkmate"
+                        self.running = "Checkmate"
                     self.board.update_pawns(self.curPlayer ^ 1)
                 self.attemptingMove = False
                 return
@@ -95,7 +99,7 @@ class Game:
             if piece.team != self.curPlayer:
                 continue
             piece.moves = self.board.get_moves(piece, var)
-            print(piece.moves)
+            # print(piece.moves)
             piece.isMoving = True
             self.attemptingMove = True
             return
@@ -111,7 +115,6 @@ class Game:
 
 def main():
     game = Game()
-    print(game.running)
     print("Game Over!")
 
 
