@@ -83,13 +83,14 @@ class Board:
 
     def get_moves(self, piece):
         moves = self.get_pseudo_moves(piece, piece.pos)
-        if not self.is_check(piece.team):
-            legalMoves = moves
-        else:
-            legalMoves = []
-            for move in moves:
-                if self.handle_check(piece, piece.pos + move):
-                    legalMoves.append(move)
+        if piece.type == "king":
+            canCastle = self.can_castle(piece.team)
+            if canCastle != False:
+                moves.extend(canCastle)
+        legalMoves = []
+        for move in moves:
+            if self.handle_check(piece, piece.pos + move):
+                legalMoves.append(move)
         return legalMoves
 
     # Gets all of the moves a piece can make
@@ -115,9 +116,6 @@ class Board:
             for move in [1, -1, 8, -8, 7, 9, -7, -9]:
                 if self.handle_screen_jumping(piece.type, position, move):
                     moveset.append(move)
-            canCastle = self.can_castle(piece.team)
-            if canCastle != False:
-                moveset.extend(canCastle)
         return moveset
 
     def get_pseudo_moves(self, piece, position):
@@ -220,8 +218,6 @@ class Board:
             enPassant = enPassant * -1
         return enPassant
 
-    # Need to rework the check system to add
-    # Need to prevent castling past check or under check
     def can_castle(self, team):
         # Can king castle
         kingSquare = 4 + (team * 56)
@@ -248,13 +244,11 @@ class Board:
                 position = kingSquare - move
                 if side == 1:
                     position = kingSquare + move
-                # print(kingSquare, move, position)
+                print(kingSquare, move, position)
                 if isinstance(self.positions[position], Piece):
                     break
-                # elif move < 3 and not self.handle_check(
-                #     self.positions[kingSquare], kingSquare + move
-                # ):
-                #     break
+                elif move < 3 and position in self.seenSquares:
+                    break
                 clear += 1
 
             if clear == 3 - side:
@@ -262,6 +256,7 @@ class Board:
                     moves.append(-2)
                 else:
                     moves.append(2)
+        print(moves)
         return moves
 
     # Will return negative if piece jumps across screen
