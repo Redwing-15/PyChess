@@ -1,6 +1,7 @@
 import pygame
 import boardhelper
 from board import Board
+from os import path
 
 
 class Game:
@@ -16,6 +17,8 @@ class Game:
         self.clock = pygame.time.Clock()
 
         self.board = Board()
+        self.Text = boardhelper.Text()
+        self.images = self.load_images()
 
         self.mainloop()
 
@@ -33,6 +36,7 @@ class Game:
                     self.handle_mouseclick(event)
             self.draw_display()
             self.clock.tick(self.FPS)
+            # break
         # Game over
 
         print(self.running)
@@ -47,10 +51,27 @@ class Game:
                 tileColour = (130, 89, 53)
                 if (rank + file) % 2:
                     tileColour = (207, 181, 135)
-                tileIndex = (rank * 8) + file
+                tileIndex = boardhelper.get_index(rank, file)
                 pygame.draw.rect(
                     self.screen, tileColour, self.board.newTiles[tileIndex]
                 )
+                # Show seen squares
+                # if tileIndex in self.board.seenSquares:
+                #     pygame.draw.rect(
+                #         self.screen,
+                #         (255, 0, 0),
+                #         pygame.Rect(
+                #             (file) * 75,
+                #             (7 - rank) * 75,
+                #             75,
+                #             75,
+                #         ),
+                #     )
+
+                # Show tile indexes
+                # x, y = (file) * 75, (7 - rank) * 75
+                # y += 75 - 15
+                # self.Text.draw(self.screen, str(tileIndex), x, y)
 
         # Draw pieces
         isMoving = False
@@ -65,13 +86,23 @@ class Game:
                 if piece.isMoving:
                     mouse_X, mouse_Y = pygame.mouse.get_pos()
                     pos = (mouse_X - 37.5, mouse_Y - 37.5)
-                    isMoving = [piece.image, pos]
+                    isMoving = [piece, pos]
                     continue
                 self.screen.blit(piece.image, pos)
 
+        # Draw tiles in moveset
         if isMoving != False:
-            self.screen.blit(isMoving[0], isMoving[1])
-
+            piece, pos = isMoving[0], isMoving[1]
+            for move in piece.moves:
+                target = piece.pos + move
+                targetRank = 8 - boardhelper.get_index_rank(target)
+                targetFile = boardhelper.get_index_file(target) - 1
+                self.screen.blit(
+                    self.images["move_indicator"],
+                    (targetFile * 75, targetRank * 75),
+                )
+            # Draw moving piece last (on top of board)
+            self.screen.blit(piece.image, pos)
         pygame.display.update()
 
     def handle_mouseclick(self, event):
@@ -88,8 +119,10 @@ class Game:
                         break
                 if self.board.handle_move(piece, var):
                     self.move += 1
-                    if self.is_checkmate(self.curPlayer ^ 1):
-                        self.running = "Checkmate"
+                    self.board.update_seen_squares(self.curPlayer)
+                    if self.board.is_check(self.curPlayer ^ 1):
+                        if self.is_checkmate(self.curPlayer ^ 1):
+                            self.running = "Checkmate"
                     self.board.update_pawns(self.curPlayer ^ 1)
                 self.attemptingMove = False
                 return
@@ -98,8 +131,7 @@ class Game:
                 continue
             if piece.team != self.curPlayer:
                 continue
-            piece.moves = self.board.get_moves(piece, var)
-            # print(piece.moves)
+            piece.moves = self.board.get_moves(piece)
             piece.isMoving = True
             self.attemptingMove = True
             return
@@ -107,10 +139,23 @@ class Game:
     def is_checkmate(self, team):
         moves = []
         for piece in self.board.pieces[team]:
-            moves.extend(self.board.get_moves(piece, piece.pos))
+            moves.extend(self.board.get_moves(piece))
         if len(moves) == 0:
             return True
         return False
+
+    def load_images(self):
+        images = {
+            "move_indicator": pygame.image.load(
+                path.abspath(f".\\images\\move_indicator.png")
+            )
+        }
+
+        for image in images:
+            transformed = pygame.transform.scale(images[image], (75, 75))
+            images[image] = transformed
+
+        return images
 
 
 def main():

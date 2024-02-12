@@ -19,5 +19,7 @@ class Piece:
 
         if type == "pawn":
             self.doublePush = False
+        elif type == "king":
+            self.isCheck = False
 
         self.isMoving = False

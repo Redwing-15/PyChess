@@ -8,6 +8,7 @@ class Board:
     def __init__(self):
         # Create board tiles
         self.positions = [0] * 64
+        self.seenSquares = []
         self.newTiles = []
 
         for file in range(8):
@@ -16,10 +17,9 @@ class Board:
 
         # Create pieces
         self.pieces = [[], []]
-        # For testing castling
-        # for pos in range(8):
-        #     self.pieces[0].append(Piece("pawn", 0, pos + 8))
-        #     self.pieces[1].append(Piece("pawn", 1, pos + 48))
+        for pos in range(8):
+            self.pieces[0].append(Piece("pawn", 0, pos + 8))
+            self.pieces[1].append(Piece("pawn", 1, pos + 48))
 
         for team in range(2):
             offset = team * 56
@@ -35,9 +35,6 @@ class Board:
                 "rook",
             ]
             for i, piece in enumerate(pieces):
-                # For testing castling
-                if piece in ["knight", "bishop", "queen"]:
-                    continue
                 self.pieces[team].append(Piece(piece, team, i + offset))
 
             for piece in self.pieces[team]:
@@ -79,20 +76,24 @@ class Board:
             self.positions[teamOffset] = 0
             self.positions[teamOffset + rookOffset] = rook
 
+        # Allow en passant
         if piece.type == "pawn" and moveOffset in [16, -16]:
             piece.doublePush = True
         return True
 
-    def get_moves(self, piece, position):
-        legalMoves = []
-        moves = self.get_pseudo_moves(piece, position)
-        for move in moves:
-            if self.handle_check(piece, piece.pos + move):
-                legalMoves.append(move)
-
+    def get_moves(self, piece):
+        moves = self.get_pseudo_moves(piece, piece.pos)
+        if not self.is_check(piece.team):
+            legalMoves = moves
+        else:
+            legalMoves = []
+            for move in moves:
+                if self.handle_check(piece, piece.pos + move):
+                    legalMoves.append(move)
         return legalMoves
 
-    def get_pseudo_moves(self, piece, position):
+    # Gets all of the moves a piece can make
+    def get_all_moves(self, piece, position):
         moveset = []
         if piece.type == "rook" or piece.type == "queen":
             moveset.extend(self.get_sliding_moves("rook", piece.team, position))
@@ -103,23 +104,9 @@ class Board:
             for move in range(7, 10):
                 if not self.handle_screen_jumping(piece.type, position, move):
                     continue
-                offset = move
-                if piece.team == 1:
-                    offset = offset * -1
-                if isinstance(self.positions[position + offset], Piece):
-                    if move == 8:
-                        continue
-                    elif self.positions[position + offset].team != piece.team:
-                        moveset.append(move)
-                if move == 8:
-                    moveset.append(move)
-            if piece.moveCount == 0:
-                moveset.append(16)
+                moveset.append(move)
             if piece.team == 1:
                 moveset = [n * -1 for n in moveset]
-
-            moveset.extend(self.can_en_passant(position, piece.team))
-
         elif piece.type == "knight":
             for move in [-10, -17, -6, -15, 6, 15, 10, 17]:
                 if self.handle_screen_jumping(piece.type, position, move):
@@ -131,7 +118,10 @@ class Board:
             canCastle = self.can_castle(piece.team)
             if canCastle != False:
                 moveset.extend(canCastle)
+        return moveset
 
+    def get_pseudo_moves(self, piece, position):
+        moveset = self.get_all_moves(piece, position)
         moves = []
         for move in moveset:
             target = position + move
@@ -141,7 +131,31 @@ class Board:
             if isinstance(target, Piece):
                 if target.team == piece.team:
                     continue
-            moves.append(move)
+            if piece.type == "pawn":
+                offset = move
+                if position + offset < 0 or position + offset > 63:
+                    continue
+                if isinstance(self.positions[position + offset], Piece):
+                    if move == 8:
+                        continue
+                    elif self.positions[position + offset].team != piece.team:
+                        moves.append(move)
+                if move in (8, -8):
+                    moves.append(move)
+                if piece.moveCount == 0:
+                    if piece.team == 0:
+                        if isinstance(self.positions[position + 8], int):
+                            moves.append(16)
+                    else:
+                        if isinstance(self.positions[position - 8], int):
+                            moves.append(-16)
+                en_passant = self.can_en_passant(position, piece.team)
+                if en_passant == False:
+                    continue
+                if not en_passant in moves:
+                    moves.append(en_passant)
+            else:
+                moves.append(move)
         return moves
 
     def get_sliding_moves(self, piece, team, position):
@@ -178,15 +192,14 @@ class Board:
                     continue
 
                 if isinstance(self.positions[target], Piece):
-                    if self.positions[target].team != team:
-                        moves.append(move)
+                    moves.append(move)
                     blockedDirs.append(dir)
                     continue
                 moves.append(move)
         return moves
 
     def can_en_passant(self, position, team):
-        moves = []
+        enPassant = False
         for move in range(7, 10, 2):
             if not self.handle_screen_jumping("pawn", position, move):
                 continue
@@ -202,10 +215,10 @@ class Board:
             if possiblePawn.team == team:
                 continue
             if possiblePawn.type == "pawn" and possiblePawn.doublePush == True:
-                moves.append(move)
-        if team == 1:
-            moves = [-item for item in moves]
-        return moves
+                enPassant = move
+        if team == 1 and enPassant != False:
+            enPassant = enPassant * -1
+        return enPassant
 
     # Need to rework the check system to add
     # Need to prevent castling past check or under check
@@ -249,29 +262,6 @@ class Board:
                     moves.append(-2)
                 else:
                     moves.append(2)
-        # for side in range(2):
-        #     rookSquare = (7 * side) + (team * 56)
-        #     if isinstance(self.positions[rookSquare], int):
-        #         continue
-        #     piece = self.positions[rookSquare]
-        #     if piece.type != "rook":
-        #         continue
-        #     if piece.moveCount != 0:
-        #         continue
-        #     clear = 0
-        #     for move in range(1, 4 - side):
-        #         position = rookSquare + move
-        #         if side == 1:
-        #             position = rookSquare - move
-        #         if isinstance(self.positions[position], Piece):
-        #             break
-        #         clear += 1
-        #     if clear == 3 - side:
-        #         if side == 0:
-        #             moves.append(-2)
-        #         else:
-        #             moves.append(2)
-
         return moves
 
     # Will return negative if piece jumps across screen
@@ -290,9 +280,9 @@ class Board:
                 return False
         return True
 
+    # Make the move, if still in check then return False
     def handle_check(self, piece, position):
-        inCheck = False
-
+        # Save current positions and piece data
         currentPositions = self.positions.copy()
         currentPieces = self.pieces[piece.team ^ 1].copy()
         oldPiecePosition = piece.pos
@@ -303,23 +293,11 @@ class Board:
 
         piece.moves = self.get_pseudo_moves(piece, position)
         self.handle_move(piece, position)
+        self.update_seen_squares(piece.team ^ 1)
 
-        for boardPosition in range(64):
-            if inCheck:
-                break
-            enemyPiece = self.positions[boardPosition]
-            if isinstance(enemyPiece, int):
-                continue
-            if enemyPiece.team == piece.team:
-                continue
-            moves = self.get_pseudo_moves(enemyPiece, boardPosition)
-            for move in moves:
-                targetPosition = self.positions[boardPosition + move]
-                if isinstance(targetPosition, int):
-                    continue
-                if targetPosition.type == "king":
-                    inCheck = True
-                    break
+        stillCheck = self.is_check(piece.team)
+
+        # Restore positions and piece data
         self.positions = currentPositions
         self.pieces[piece.team ^ 1] = currentPieces
         piece.pos = oldPiecePosition
@@ -328,9 +306,33 @@ class Board:
         if piece.type == "pawn":
             piece.doublePush = oldDoublePush
 
-        if piece.type == "king":
-            diff = position - piece.pos
-        return inCheck ^ 1
+        self.update_seen_squares(piece.team ^ 1)
+        return stillCheck ^ 1
+
+    def is_check(self, team):
+        for item in self.pieces[team]:
+            if item.type != "king":
+                continue
+            king = item
+            break
+        if king.pos in self.seenSquares:
+            king.isCheck = True
+        else:
+            king.isCheck = False
+
+        return king.isCheck
+
+    def update_seen_squares(self, team):
+        seenSquares = []
+        for piece in self.pieces[team]:
+            moves = self.get_all_moves(piece, piece.pos)
+            # Remove pawn pushes as they cannot attack
+            if piece.type == "pawn":
+                moves = [i for i in moves if i not in (8, -8)]
+            for move in moves:
+                position = piece.pos + move
+                seenSquares.append(position)
+        self.seenSquares = seenSquares
 
     # Updates pawns to prevent en passant
     def update_pawns(self, team):
