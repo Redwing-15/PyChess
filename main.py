@@ -19,6 +19,7 @@ class Game:
         self.board = Board()
         self.Text = boardhelper.Text()
         self.images = self.load_images()
+        self.isPromoting = False
 
         self.mainloop()
 
@@ -32,8 +33,13 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    self.handle_mouseclick(event)
+                # If pawn is on final rank, only allow keyboard input for the promotion
+                if not isinstance(self.isPromoting, bool):
+                    if event.type == pygame.KEYDOWN:
+                        self.handle_keyboard(event)
+                else:
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        self.handle_mouseclick(event)
             self.draw_display()
             self.clock.tick(self.FPS)
             # break
@@ -69,9 +75,9 @@ class Game:
                 #     )
 
                 # Show tile indexes
-                # x, y = (file) * 75, (7 - rank) * 75
-                # y += 75 - 15
-                # self.Text.draw(self.screen, str(tileIndex), x, y)
+                x, y = (file) * 75, (7 - rank) * 75
+                y += 75 - 15
+                self.Text.draw(self.screen, str(tileIndex), x, y)
 
         # Draw pieces
         isMoving = False
@@ -118,12 +124,10 @@ class Game:
                     if piece.isMoving:
                         break
                 if self.board.handle_move(piece, var):
-                    self.move += 1
-                    self.board.update_seen_squares(self.curPlayer)
-                    if self.board.is_check(self.curPlayer ^ 1):
-                        if self.is_checkmate(self.curPlayer ^ 1):
-                            self.running = "Checkmate"
-                    self.board.update_pawns(self.curPlayer ^ 1)
+                    if piece.type == "pawn" and boardhelper.get_index_rank(var) == 8:
+                        self.isPromoting = piece
+                    else:
+                        self.handle_move()
                 self.attemptingMove = False
                 return
             piece = self.board.positions[var]
@@ -135,6 +139,30 @@ class Game:
             piece.isMoving = True
             self.attemptingMove = True
             return
+
+    def handle_keyboard(self, event):
+        if isinstance(self.isPromoting, bool):
+            return
+
+        pieces = {
+            pygame.K_q: "queen",
+            pygame.K_r: "rook",
+            pygame.K_b: "bishop",
+            pygame.K_k: "knight",
+        }
+
+        self.isPromoting.promote(pieces[event.key])
+
+        self.isPromoting = False
+        self.handle_move()
+
+    def handle_move(self):
+        self.move += 1
+        self.board.update_seen_squares(self.curPlayer)
+        if self.board.is_check(self.curPlayer ^ 1):
+            if self.is_checkmate(self.curPlayer ^ 1):
+                self.running = "Checkmate"
+        self.board.update_pawns(self.curPlayer ^ 1)
 
     def is_checkmate(self, team):
         moves = []

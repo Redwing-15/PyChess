@@ -1,7 +1,6 @@
 import pygame
 import boardhelper
 from piece import Piece
-import copy
 
 
 class Board:
@@ -35,6 +34,8 @@ class Board:
                 "rook",
             ]
             for i, piece in enumerate(pieces):
+                if piece in ["rook", "knight", "bishop", "queen"]:
+                    continue
                 self.pieces[team].append(Piece(piece, team, i + offset))
 
             for piece in self.pieces[team]:
@@ -202,6 +203,8 @@ class Board:
             if not self.handle_screen_jumping("pawn", position, move):
                 continue
             target_position = position + move if team == 0 else position - move
+            if target_position < 0 or target_position > 63:
+                continue
             if isinstance(self.positions[target_position], Piece):
                 continue
             offset = move - 8
@@ -244,7 +247,6 @@ class Board:
                 position = kingSquare - move
                 if side == 1:
                     position = kingSquare + move
-                print(kingSquare, move, position)
                 if isinstance(self.positions[position], Piece):
                     break
                 elif move < 3 and position in self.seenSquares:
@@ -256,7 +258,6 @@ class Board:
                     moves.append(-2)
                 else:
                     moves.append(2)
-        print(moves)
         return moves
 
     # Will return negative if piece jumps across screen

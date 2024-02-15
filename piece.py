@@ -19,7 +19,16 @@ class Piece:
 
         if type == "pawn":
             self.doublePush = False
+            self.isPromoting = False
         elif type == "king":
             self.isCheck = False
 
         self.isMoving = False
+
+    def promote(self, newType):
+        self.type = newType
+
+        self.image = image.load(path.abspath(f".\\images\\white_{newType}.png"))
+        if self.team == 1:
+            self.image = image.load(path.abspath(f".\\images\\black_{newType}.png"))
+        self.image = transform.scale(self.image, (75, 75))
