@@ -34,8 +34,6 @@ class Board:
                 "rook",
             ]
             for i, piece in enumerate(pieces):
-                if piece in ["rook", "knight", "bishop", "queen"]:
-                    continue
                 self.pieces[team].append(Piece(piece, team, i + offset))
 
             for piece in self.pieces[team]:
@@ -107,6 +105,7 @@ class Board:
                 if not self.handle_screen_jumping(piece.type, position, move):
                     continue
                 moveset.append(move)
+            moveset.append(16)
             if piece.team == 1:
                 moveset = [n * -1 for n in moveset]
         elif piece.type == "knight":
@@ -121,6 +120,7 @@ class Board:
 
     def get_pseudo_moves(self, piece, position):
         moveset = self.get_all_moves(piece, position)
+        print(moveset)
         moves = []
         for move in moveset:
             target = position + move
@@ -135,7 +135,7 @@ class Board:
                 if position + offset < 0 or position + offset > 63:
                     continue
                 if isinstance(self.positions[position + offset], Piece):
-                    if move == 8:
+                    if move == 8 or move == -8:
                         continue
                     elif self.positions[position + offset].team != piece.team:
                         moves.append(move)
@@ -155,6 +155,8 @@ class Board:
                     moves.append(en_passant)
             else:
                 moves.append(move)
+        moves = list(dict.fromkeys(moves))
+        print(moves)
         return moves
 
     def get_sliding_moves(self, piece, team, position):
