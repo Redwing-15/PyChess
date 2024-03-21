@@ -62,6 +62,8 @@ class Board:
 
         # Handle Castling
         if piece.type == "king":
+            if piece.canCastle:
+                return True
             if new_pos == 2 or new_pos == 58:
                 teamOffset = new_pos - 2
                 rookOffset = 3
@@ -74,6 +76,7 @@ class Board:
             rook.moveCount += 1
             self.positions[teamOffset] = 0
             self.positions[teamOffset + rookOffset] = rook
+            piece.canCastle = True
 
         # Allow en passant
         if piece.type == "pawn" and moveOffset in [16, -16]:
@@ -120,7 +123,6 @@ class Board:
 
     def get_pseudo_moves(self, piece, position):
         moveset = self.get_all_moves(piece, position)
-        print(moveset)
         moves = []
         for move in moveset:
             target = position + move
@@ -156,7 +158,6 @@ class Board:
             else:
                 moves.append(move)
         moves = list(dict.fromkeys(moves))
-        print(moves)
         return moves
 
     def get_sliding_moves(self, piece, team, position):

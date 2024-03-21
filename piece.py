@@ -21,6 +21,7 @@ class Piece:
             self.doublePush = False
             self.isPromoting = False
         elif type == "king":
+            self.canCastle = False
             self.isCheck = False
 
         self.isMoving = False
