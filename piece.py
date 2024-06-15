@@ -8,9 +8,9 @@ class Piece:
         self.type = type
         self.team = team
 
-        self.image = image.load(path.abspath(f".\\images\\white_{type}.png"))
+        self.image = image.load(path.abspath(path.join(".", "images", f"white_{type}.png")))
         if team == 1:
-            self.image = image.load(path.abspath(f".\\images\\black_{type}.png"))
+            self.image = image.load(path.abspath(path.join(".", "images", f"black_{type}.png")))
         self.image = transform.scale(self.image, (75, 75))
 
         self.pos = position

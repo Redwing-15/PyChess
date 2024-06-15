@@ -45,9 +45,9 @@ class Game:
             # break
         # Game over
 
-        print(self.running)
-        while True:
-            self.draw_display()
+        # print(self.running)   
+        # while True:
+        #     self.draw_display()
         # pygame.quit()
 
     def draw_display(self):
@@ -62,17 +62,17 @@ class Game:
                     self.screen, tileColour, self.board.newTiles[tileIndex]
                 )
                 # Show seen squares
-                # if tileIndex in self.board.seenSquares:
-                #     pygame.draw.rect(
-                #         self.screen,
-                #         (255, 0, 0),
-                #         pygame.Rect(
-                #             (file) * 75,
-                #             (7 - rank) * 75,
-                #             75,
-                #             75,
-                #         ),
-                #     )
+                if tileIndex in self.board.seenSquares:
+                    pygame.draw.rect(
+                        self.screen,
+                        (255, 0, 0),
+                        pygame.Rect(
+                            (file) * 75,
+                            (7 - rank) * 75,
+                            75,
+                            75,
+                        ),
+                    )
 
                 # Show tile indexes
                 x, y = (file) * 75, (7 - rank) * 75
@@ -175,7 +175,7 @@ class Game:
     def load_images(self):
         images = {
             "move_indicator": pygame.image.load(
-                path.abspath(f".\\images\\move_indicator.png")
+                path.abspath(path.join(".", "images", "move_indicator.png"))
             )
         }
 
