@@ -62,17 +62,17 @@ class Game:
                     self.screen, tileColour, self.board.newTiles[tileIndex]
                 )
                 # Show seen squares
-                if tileIndex in self.board.seenSquares:
-                    pygame.draw.rect(
-                        self.screen,
-                        (255, 0, 0),
-                        pygame.Rect(
-                            (file) * 75,
-                            (7 - rank) * 75,
-                            75,
-                            75,
-                        ),
-                    )
+                # if tileIndex in self.board.seenSquares:
+                #     pygame.draw.rect(
+                #         self.screen,
+                #         (255, 0, 0),
+                #         pygame.Rect(
+                #             (file) * 75,
+                #             (7 - rank) * 75,
+                #             75,
+                #             75,
+                #         ),
+                #     )
 
                 # Show tile indexes
                 x, y = (file) * 75, (7 - rank) * 75

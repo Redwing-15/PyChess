@@ -108,7 +108,8 @@ class Board:
                 if not self.handle_screen_jumping(piece.type, position, move):
                     continue
                 moveset.append(move)
-            moveset.append(16)
+            if piece.doublePush:
+                moveset.append(16)
             if piece.team == 1:
                 moveset = [n * -1 for n in moveset]
         elif piece.type == "knight":
